@@ -27,6 +27,10 @@ var credentials = require(casper.cli.has('credentials') ? casper.cli.get('creden
 var userName = credentials.userName;
 var password = credentials.password;
 
+var dt = new Date();
+var year = casper.cli.has('year') ? casper.cli.get('year') : dt.getFullYear();
+var month = casper.cli.has('month') ? casper.cli.get('month') : dt.getMonth() + 1;
+
 // start with URL that should display billing history of the subscription it should redirect to
 //  login form (for Microsoft Account, which seems to be the default variant of the login form)
 //  because headless PhantomJS browser starts always with empty cache, no cookies, etc
@@ -49,6 +53,7 @@ casper.then(function() {
 
         this.echo("GOT MAINFRAME");
 
+        // get IFRAMEs from the page to determine the right frame to use in this CasperJS script
         var items = this.evaluate(function() {
             var itemsInner = document.querySelectorAll('iframe');
             var itemsInnerProj = Array.prototype.map.call(itemsInner, function (item) {
@@ -63,29 +68,38 @@ casper.then(function() {
         });
         this.echo(JSON.stringify(items, null, 2));
         // will use id of the first IFRAME
-        mainFrameIframeId = items[0].id;
+        if (items.length > 0) mainFrameIframeId = items[0].id; else mainFrameIframeId = 'cf';
+        this.echo('Will use this mainFrameIframeId: ' + mainFrameIframeId);
 
         this.withFrame(mainFrameIframeId, function() {
         
             this.echo("IN MAINFRAME");
 
-            var items = this.evaluate(function() {
-                var itemsInner = document.querySelectorAll('a');
+            var items1 = this.evaluate(function() {
+                var itemsInner = document.querySelectorAll('select');
                 var itemsInnerProj = Array.prototype.map.call(itemsInner, function (item) {
                     return {
                         tagName: item.tagName,
                         id: item.id,
                         className: item.className,
                         name: item.name,
-                        href: item.href
+                        selectedIndex: item.selectedIndex
                     };
                 });
                 return JSON.stringify(itemsInnerProj, null, 2);
             });
-            this.echo(items);
-            
+            this.echo(items1);
+
+            // fill the form on the top of the bill overview frame and "submit" it (will trigger AJAX call to get the details about selected month+year period)
+            this.fill('form#form1', {
+                'YearDropdown': year,
+                'MonthDropdown': month
+            }, true);
+
+            // wait for the link button that will display details about selected month+year period including the link to the invoice PDF 
             this.waitForSelector('#OrderRepeater_ctl01_OrderDetailsLink', function() {
                 this.echo("GOT DETAILS LINK");
+                // then click it
                 this.click('#OrderRepeater_ctl01_OrderDetailsLink');
             }, null, waitTimeout);
             
