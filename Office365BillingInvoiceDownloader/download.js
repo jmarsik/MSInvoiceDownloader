@@ -32,7 +32,7 @@ var year = casper.cli.has('year') ? casper.cli.get('year') : dt.getFullYear();
 var month = casper.cli.has('month') ? casper.cli.get('month') : dt.getMonth() + 1;
 
 // start with URL that should display billing history of the subscription it should redirect to
-//  login form (for Microsoft Account, which seems to be the default variant of the login form)
+//  login form (for Organizational Account, which seems to be the default variant of the login form)
 //  because headless PhantomJS browser starts always with empty cache, no cookies, etc
 casper.start(
     'https://portal.office.com/Commerce/BillOverview.aspx'
@@ -41,14 +41,14 @@ casper.start(
 // 'https://portal.office.com/Commerce/BillDetailsContent.aspx?orderId=' + orderId + '&month=' + month + '&year=' + year
 
 casper.then(function() {
-    // fill login form with Microsoft Account username and password
+    // fill login form with Organizational Account username and password
     this.fill('form', { 'login': userName, 'passwd': password }, true);
 });
 
 var mainFrameIframeId = 'will-be-detected';
 
 casper.then(function() {
-    
+
     this.waitForSelector('div#O365MainFrame', function() {
 
         this.echo("GOT MAINFRAME");
@@ -72,7 +72,7 @@ casper.then(function() {
         this.echo('Will use this mainFrameIframeId: ' + mainFrameIframeId);
 
         this.withFrame(mainFrameIframeId, function() {
-        
+
             this.echo("IN MAINFRAME");
 
             var items1 = this.evaluate(function() {
@@ -96,13 +96,13 @@ casper.then(function() {
                 'MonthDropdown': month
             }, true);
 
-            // wait for the link button that will display details about selected month+year period including the link to the invoice PDF 
+            // wait for the link button that will display details about selected month+year period including the link to the invoice PDF
             this.waitForSelector('#OrderRepeater_ctl01_OrderDetailsLink', function() {
                 this.echo("GOT DETAILS LINK");
                 // then click it
                 this.click('#OrderRepeater_ctl01_OrderDetailsLink');
             }, null, waitTimeout);
-            
+
         });
 
     }, null, waitTimeout);
@@ -113,7 +113,7 @@ casper.then(function() {
 
     this.waitForSelector('div#O365MainFrame', function() {
         this.withFrame(mainFrameIframeId, function() {
-        
+
             this.waitForSelector('a#InvoiceLink', function() {
 
                 var url = this.getElementAttribute('a#InvoiceLink', 'href');

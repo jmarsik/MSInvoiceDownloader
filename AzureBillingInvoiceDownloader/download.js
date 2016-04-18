@@ -29,21 +29,28 @@ var subscriptionId = credentials.subscriptionId;
 // settings - username and password of Microsoft Account that is the owner of the subscription
 var userName = credentials.userName;
 var password = credentials.password;
-
+// Organizational Account login page switch - will use slightly different URL and login form fields' names
 var azureAD = (typeof credentials.azureAD === 'undefined') ? false : credentials.azureAD;
-console.log(credentials.userName);
-console.log(credentials.azureAD);
+
+console.log('Using username: ' + userName);
+console.log('Using Organizational Account login page: ' + azureAD);
 
 // start with URL that should display billing history of the subscription it should redirect to
 //  login form (for Microsoft Account, which seems to be the default variant of the login form)
 //  because headless PhantomJS browser starts always with empty cache, no cookies, etc
 var url = 'https://account.windowsazure.com/Subscriptions/billinghistory?subscriptionId=' + subscriptionId
-url = azureAD ? url + '&WHR=azure.com' : url; 
+// add URL suffix for organizational account if neccessary
+url = azureAD ? url + '&WHR=azure.com' : url;
+
 casper.start(url);
 
 casper.then(function() {
-    // fill login form with Microsoft Account username and password
-    this.fill('form', { 'loginfmt': userName, 'passwd': password }, true);
+    // fill login form with Microsoft Account or Organizational Account username and password
+    if (azureAD) {
+        this.fill('form', { 'login': userName, 'passwd': password }, true);
+    } else {
+        this.fill('form', { 'loginfmt': userName, 'passwd': password }, true);
+    }
 });
 
 casper.then(function() {
@@ -52,17 +59,17 @@ casper.then(function() {
             var a = document.body.innerHTML;
             return a;
         });
-//        this.echo(content);    
+//        this.echo(content);
 
         var items = this.evaluate(function() {
-            
+
             var links = document.querySelectorAll('ul.billing-list li');
-            
+
             var s = "";
             aa = Array.prototype.map.call(links, function(e) {
                 return e.innerHTML;
             });
-            
+
             for (var key in links) {
                 s = s + links[key].innerHTML;
             }
@@ -71,7 +78,7 @@ casper.then(function() {
             var arr = new Array();
             var i = 0;
             var len = links.length;
-            
+
             for (; i < len;) {
                 arr.push({
                     'name': links[i].querySelector('h2').innerText,
@@ -80,14 +87,14 @@ casper.then(function() {
                 s = s + links[i].querySelector('h2').innerText;
                 i += 3;
             };
-            
+
             return arr;
-            
-        });        
-        
-        this.echo(items[0].invoiceDownloadUrl); 
-        
-        
+
+        });
+
+        this.echo(items[0].invoiceDownloadUrl);
+
+
         // use invoice download URL (from first A element in "row") from 2nd "row" (first "row" is
         //  current month, second "row" is first completely finished month)
         this.then(function() {

@@ -327,7 +327,12 @@ Temporary Items
 
 
 
+# GitEye project file
+/.project
+
 # JM additions
 Invoice_*.*
 credentials*.json
 !credentials.sample.json
+/credentials/
+/output/
