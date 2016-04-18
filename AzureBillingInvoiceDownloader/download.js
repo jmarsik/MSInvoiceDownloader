@@ -17,6 +17,9 @@ var casper = require('casper').create({
 });
 var utils = require('utils');
 
+// path to save downloades files
+var pathToSave = casper.cli.has('path') ? casper.cli.get('path') : '.';
+
 // load credentials from file that is not being tracked by Git
 // credentials JSON file can be specified on the command line by using --credentials=filename.json, otherwise the default credentials.json will be used
 var credentials = require(casper.cli.has('credentials') ? casper.cli.get('credentials') : 'credentials.json');
@@ -27,12 +30,16 @@ var subscriptionId = credentials.subscriptionId;
 var userName = credentials.userName;
 var password = credentials.password;
 
+var azureAD = (typeof credentials.azureAD === 'undefined') ? false : credentials.azureAD;
+console.log(credentials.userName);
+console.log(credentials.azureAD);
+
 // start with URL that should display billing history of the subscription it should redirect to
 //  login form (for Microsoft Account, which seems to be the default variant of the login form)
 //  because headless PhantomJS browser starts always with empty cache, no cookies, etc
-casper.start(
-    'https://account.windowsazure.com/Subscriptions/billinghistory?subscriptionId=' + subscriptionId
-);
+var url = 'https://account.windowsazure.com/Subscriptions/billinghistory?subscriptionId=' + subscriptionId
+url = azureAD ? url + '&WHR=azure.com' : url; 
+casper.start(url);
 
 casper.then(function() {
     // fill login form with Microsoft Account username and password
@@ -94,6 +101,7 @@ casper.then(function() {
                 if (resource.stage == 'start' && resource.contentType == 'application/pdf') {
                     // get filename returned by server and use it
                     var fn = resource.headers.get('Content-Disposition').replace(/.*filename=(.*)/i, '$1');
+                    fn = pathToSave + '/' + fn;
                     // use standard CasperJS download method, because resource.received event does not
                     //  provide resource content; it's used just to determine the right moment to download
                     casper.download(resource.url, fn);
