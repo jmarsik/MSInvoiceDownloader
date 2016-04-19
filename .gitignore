@@ -334,5 +334,5 @@ Temporary Items
 Invoice_*.*
 credentials*.json
 !credentials.sample.json
-/credentials/
-/output/
+/credentials/*
+/output/*
